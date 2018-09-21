@@ -10,21 +10,24 @@ public class FreeCameraController : MonoBehaviour
     public Vector2 mouseSensitivity = new Vector2(100f, 100f);
 
     [Header("Key Bindings")]
-    public string horizontalAxis = "Horizontal";
-    public string forwardAxis = "Vertical";
-    public string xAxis = "Mouse X";
-    public string yAxis = "Mouse Y";
+    public string moveRightAxis = "Horizontal";
+    public string moveForwardAxis = "Vertical";
+    public KeyCode moveUpKey = KeyCode.Space;
+    public KeyCode moveDownKey = KeyCode.C;
+    public string lookRightAxis = "Mouse X";
+    public string lookUpAxis = "Mouse Y";
     public KeyCode rollLeft = KeyCode.Q;
     public KeyCode rollRight = KeyCode.E;
-    public KeyCode haltKey = KeyCode.Space;
     public KeyCode fastKey = KeyCode.LeftShift;
     public KeyCode fastLockKey = KeyCode.CapsLock;
+    public KeyCode haltKey = KeyCode.Return;
 
     private bool fastLock = false;
     private bool halt = false;
 
     private void Update()
     {
+        // Modifiers
         if (Input.GetKeyDown(haltKey))
         {
             halt = !halt;
@@ -39,22 +42,26 @@ public class FreeCameraController : MonoBehaviour
         }
         bool fast = fastLock ^ Input.GetKey(fastKey);
 
-
         // Mouse look and roll rotation
-        Vector3 rotation = GetRotation(mouseSensitivity, (fast ? fastRollSpeed : rollSpeed), xAxis, yAxis, rollLeft, rollRight);
-        transform.rotation *= Quaternion.Euler(-rotation.y, rotation.x, rotation.z);
+        transform.rotation *= GetRotationChange(fast ? fastRollSpeed : rollSpeed);
 
         // Movement
-        Vector3 moveInput = new Vector3(Input.GetAxisRaw(horizontalAxis), 0, Input.GetAxisRaw(forwardAxis));
-        Vector3 movement = moveInput * Time.deltaTime * (fast ? fastSpeed : speed);
-        transform.Translate(movement);
+        transform.Translate(GetMovementChange(fast ? fastSpeed : speed));
     }
 
-    private static Vector3 GetRotation(Vector2 mouseSensitivity, float rollSpeed, string xAxis, string yAxis, KeyCode rollLeft, KeyCode rollRight)
+    private Quaternion GetRotationChange(float rollSpeed)
     {
-        float x = Input.GetAxisRaw(xAxis) * mouseSensitivity.x;
-        float y = Input.GetAxisRaw(yAxis) * mouseSensitivity.y;
-        float z = ((Input.GetKey(rollLeft) ? 1 : 0) + (Input.GetKey(rollRight) ? -1 : 0)) * rollSpeed;
-        return new Vector3(x, y, z) * Time.deltaTime;
+        float yaw = Input.GetAxisRaw(lookRightAxis) * mouseSensitivity.x;
+        float pitch = -1 * Input.GetAxisRaw(lookUpAxis) * mouseSensitivity.y;
+        float roll = ((Input.GetKey(rollLeft) ? 1 : 0) + (Input.GetKey(rollRight) ? -1 : 0)) * rollSpeed;
+        return Quaternion.Euler(new Vector3(pitch, yaw, roll) * Time.deltaTime);
+    }
+
+    private Vector3 GetMovementChange(float speed)
+    {
+        float up = ((Input.GetKey(moveUpKey) ? 1 : 0) + (Input.GetKey(moveDownKey) ? -1 : 0));
+        float right = Input.GetAxisRaw(moveRightAxis);
+        float forward = Input.GetAxisRaw(moveForwardAxis);
+        return new Vector3(right, up, forward).normalized * Time.deltaTime * speed;
     }
 }
